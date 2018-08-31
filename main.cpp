@@ -23,7 +23,7 @@ float fPlayerA = 0.0f;
 int nMapHeight = 16;
 int nMapWidth = 16;
 
-float fFOV = 3.14159 / 4.0;
+float fFOV = 3.14159f / 4.0f;
 float fDepth = 16.0f;
 
 int main(){
@@ -36,7 +36,6 @@ int main(){
 
 	noecho(); // user input is not displayed on the screen
 	curs_set(0); // cursor symbol is not not displayed on the screen (Linux)
-	getmaxyx(stdscr, nScreenHeight, nScreenWidth); // define dimensions of game window
 
 	// Our Game Map
 	string map;
@@ -62,6 +61,7 @@ int main(){
 	auto tp2 = chrono::system_clock::now();
 	while(1)
 	{
+		getmaxyx(stdscr, nScreenHeight, nScreenWidth); // define dimensions of game window
 		tp2 = chrono::system_clock::now();		
 		chrono::duration<float> elapsedTime = tp2 - tp1;
 		tp1 = tp2;
@@ -96,6 +96,22 @@ int main(){
 				}
 				break;
 			case 'q':
+				fPlayerX-= cosf(fPlayerA) * 15.0f * fElapsedTime;
+				fPlayerY+= sinf(fPlayerA) * 15.0f * fElapsedTime;
+				if(map[(int)fPlayerY*nMapWidth + (int)fPlayerX] == '#'){
+					fPlayerX+= sinf(fPlayerA) * 15.0f * fElapsedTime;
+					fPlayerY-= cosf(fPlayerA) * 15.0f * fElapsedTime;
+				}
+				break;
+			case 'e':
+				fPlayerX+= cosf(fPlayerA) * 15.0f * fElapsedTime;
+				fPlayerY-= sinf(fPlayerA) * 15.0f * fElapsedTime;
+				if(map[(int)fPlayerY*nMapWidth + (int)fPlayerX] == '#'){
+					fPlayerX-= cosf(fPlayerA) * 15.0f * fElapsedTime;
+					fPlayerY+= sinf(fPlayerA) * 15.0f * fElapsedTime;
+				}
+				break;
+			case 27:
 				return 0;
 			default:
 				break;
@@ -103,7 +119,9 @@ int main(){
 		for(int x=0 ; x <nScreenWidth; x++)
 		{
 			float fRayAngle = (fPlayerA - fFOV / 2.0f) + ((float)x / (float)nScreenWidth) * fFOV;
-			float fDistanceToWall = 0;
+
+			float fStepSize = 0.01f;
+			float fDistanceToWall = 0.0f;
 			bool bHitWall = false;
 			bool bHitBoundary = false;
 
@@ -112,7 +130,7 @@ int main(){
 
 			while(!bHitWall && fDistanceToWall < fDepth)
 			{
-				fDistanceToWall += 0.1f;	
+				fDistanceToWall += fStepSize;	
 
 				int nTestX = (int)(fPlayerX + fEyeX * fDistanceToWall);
 				int nTestY = (int)(fPlayerY + fEyeY * fDistanceToWall);
@@ -144,7 +162,7 @@ int main(){
 							float fBound = 0.005;
 							if(acos(p.at(0).second) < fBound) bHitBoundary = true;
 							if(acos(p.at(1).second) < fBound) bHitBoundary = true;
-							//if(acos(p.at(2).second) < fBound) bHitBoundary = true;
+							if(acos(p.at(2).second) < fBound) bHitBoundary = true;
 						}
 					}
 				}
@@ -177,22 +195,23 @@ int main(){
 					char floorShade;
 					if(b < 0.25) floorShade ='#';
 					else if(b < 0.5) floorShade ='x';
-					else if(b < 0.75) floorShade ='.';
-					else if(b < 0.9) floorShade ='-';
+					else if(b < 0.75) floorShade ='-';
+					else if(b < 0.9) floorShade ='.';
 					else floorShade = ' ';
 					mvaddch(y, x,floorShade);
 				}
 			}
 			for(int i=0; i<16; i++){
-				for(int j=0; j<16; j++){
+				for(int j=0; j<25; j++){
 					mvprintw(i,j,"%c",map[i*16+j]);
 				}
 			}
-			mvaddch((int)fPlayerY + 1,(int)fPlayerX,'P');
-			mvaddch((int)fPlayerY + 1 + ceil(1.5*cosf(fPlayerA)),(int)fPlayerX + ceil(1.5*sinf(fPlayerA)),'@');
-			mvprintw(0,0,"X=%f, Y=%f, A=%f, FPS=%f",fPlayerX,fPlayerY,fPlayerA,1.0f/fElapsedTime);
+			mvaddch((int)fPlayerY ,(int)fPlayerX,'P');
+			mvaddch((int)fPlayerY + ceil(1.5*cosf(fPlayerA)),(int)fPlayerX + ceil(1.5*sinf(fPlayerA)),'@');
+			mvprintw(0,0,"X=%f, Y=%f, A=%f, FPS=%f, WindowSize:%d,%d",fPlayerX,fPlayerY,fPlayerA,1.0f/fElapsedTime,nScreenWidth,nScreenHeight);
 		}
 		refresh();
 	}
+	curs_set(1); // cursor symbol is not not displayed on the screen (Linux)
 	return 0;
 }
